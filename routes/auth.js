@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { check } = require("express-validator"); //MIddleware de ExpressValidator
-const { login } = require("../controllers/auth.controller");
+const { login } = require("../controllers");
 const { validarCampos } = require("../middlewares/validar-Campos");
 
 const router = Router();

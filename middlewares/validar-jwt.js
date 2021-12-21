@@ -19,7 +19,7 @@ const validarJWT = async (req, res = response, next) => {
 
     //Tarea, traer al usuario autenticado
     const usuario = await Usuario.findById(uid);
-    req.usuarioAutenticado = usuario;
+    req.usuario = usuario;
 
     //Verificar si el User existe
 

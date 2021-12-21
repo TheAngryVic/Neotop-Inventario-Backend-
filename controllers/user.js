@@ -64,7 +64,7 @@ const usuariosDelete = async (req, res) => {
 
     const { id } = req.params;
 
-    const usuario_autenticado = req.usuarioAutenticado;
+    const usuario_autenticado = req.usuario;
 
 
     //Fisicamente lo borramos

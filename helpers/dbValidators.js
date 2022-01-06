@@ -71,7 +71,8 @@ const existeModelo = async (nombre = "")=>{
 //bodega
 
 const existeBodegaxID = async (id = "")=>{
-
+    
+    console.log("CTM", id);
     const existencia = await Bodega.findById(id, {estado: true});
     if (!existencia) {
         throw new Error(`El ID: ${id}, no existe`);

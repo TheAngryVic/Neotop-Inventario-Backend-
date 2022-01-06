@@ -1,19 +1,56 @@
 const { response } = require("express");
 const { Bodega } = require("../models");
+//pagination
+const { calculateLimitAndOffset, paginate } = require("paginate-info");
+
 
 const obtenerBodegas = async (req, res = response) => {
-  const { limite = 5, desde = 0 } = req.query;
 
-  const [total, bodegas] = await Promise.all([
-    Bodega.countDocuments({ estado: true }),
-    Bodega.find({ estado: true }).limit(Number(limite)).skip(Number(desde)),
-  ]);
+  const  {currentPage, pageSize,  ad = '1'} = req.query;
 
-  res.json({
-    total,
-    bodegas,
-  });
+
+  try {
+
+    const count = await Bodega.countDocuments({ estado: true });
+
+    const {limit, offset} = calculateLimitAndOffset(currentPage, pageSize);
+
+    const rows = await Bodega.find({estado:true})
+    .sort({nombre: ad})
+    .skip(offset)
+    .limit(limit);
+    
+    const meta = paginate(currentPage, count, rows, pageSize);
+
+    return res.status(200).json({
+      rows,
+      meta
+    })
+    
+  } catch (error) {
+
+    console.log(error);
+    
+    return res.status(500).json({
+       error
+
+    })
+  }
+
 };
+// const obtenerBodegas = async (req, res = response) => {
+//   const { limite = 5, page= req.query.page > 0 ? req.query.page  : 0  } = req.query;
+
+//   const [total, bodegas] = await Promise.all([
+//     Bodega.countDocuments({ estado: true }),
+//     Bodega.find({ estado: true }).limit(Number(limite)).skip(Number(limite * page)),
+//   ]);
+
+//   res.json({
+//     total,
+//     bodegas,
+//   });
+// };
 
 const obtenerBodega = async (req, res = response) => {
   const { id } = req.params;
@@ -67,7 +104,8 @@ const actualizarBodega = async (req, res = response) => {
   const bodega = await Bodega.findByIdAndUpdate(id, data, { new: true });
 
   res.status(200).json({
-    bodega,
+    msg:`Bodega ${data.uid} actualizada`
+    ,bodega
   });
 };
 

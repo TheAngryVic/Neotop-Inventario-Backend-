@@ -26,7 +26,7 @@ const router = Router();
  */
 
 //Obtener todas las categorias
-router.get("/", obtenerCategorias);
+router.get("/",[validarJWT, validarCampos] ,obtenerCategorias);
 
 //Obtener una categoria por id
 router.get(

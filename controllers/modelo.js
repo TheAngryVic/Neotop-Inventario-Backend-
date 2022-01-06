@@ -2,26 +2,58 @@ const { response } = require("express");
 const bcrypter = require("bcryptjs");
 const { Modelo } = require("../models");
 
+
+//pagination
+const { calculateLimitAndOffset, paginate } = require("paginate-info");
+
 //CRUD modelo
 
 //Obtener todos los modelos - autenticado - todos los permisos
 
 const obtenerModelos = async (req, res = response) => {
-  const { limite = 5, desde = 0 } = req.query;
 
-  const [total, modelos] = await Promise.all([
-    Modelo.countDocuments({ estado: true }),
-    Modelo.find({ estado: true })
-      .populate("usuario", "nombre")
-      .populate("categoria", "nombre")
-      .limit(Number(limite))
-      .skip(Number(desde)),
-  ]);
+  const  {currentPage, pageSize,  ad = '1'} = req.query;
 
-  res.json({
-    total,
-    modelos,
-  });
+  try {
+
+    const count = await Modelo.countDocuments({estado:true});
+
+    const {limit, offset} = calculateLimitAndOffset(currentPage, pageSize);
+
+    const rows = await Modelo.find({estado:true})
+                             .populate("usuario")
+                             .populate("categoria", "nombre")
+                             .sort({nombre:ad})
+                             .skip(offset)
+                             .limit(limit);
+
+    const meta = paginate(currentPage, count, rows, pageSize);
+
+    return res.status(200).json({
+      rows,
+      meta
+    })
+
+  } catch (error) {
+    console.log(error);
+  }
+
+
+  // const { limite = 5, desde = 0 } = req.query;
+
+  // const [total, modelos] = await Promise.all([
+  //   Modelo.countDocuments({ estado: true }),
+  //   Modelo.find({ estado: true })
+  //     .populate("usuario", "nombre")
+  //     .populate("categoria", "nombre")
+  //     .limit(Number(limite))
+  //     .skip(Number(desde)),
+  // ]);
+
+  // res.json({
+  //   total,
+  //   modelos,
+  // });
 };
 
 //Obtener modelo por id - autenticado - todos los permisos

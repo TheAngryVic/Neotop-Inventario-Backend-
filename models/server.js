@@ -38,6 +38,9 @@ class Server {
 
     // Directorio publico
     this.app.use(express.static("public"));
+
+    //application/x-www-form-urlencoded
+    this.app.use(express.urlencoded({ extended: true }));
   }
 
   routes() {

@@ -1,23 +1,36 @@
 const { response } = require("express");
-const { Categoria } = require("../models");
+const { Categoria, Modelo } = require("../models");
 
 //obtenerCategorias - paginado - total - populate
 
+const { calculateLimitAndOffset, paginate } = require("paginate-info");
+
 const obtenerCategorias = async (req, res = response) => {
-  const { limite = 5, desde = 0 } = req.query;
+  const { currentPage, pageSize, ad = "1" } = req.query;
 
-  const [total, categorias] = await Promise.all([
-    Categoria.countDocuments({ estado: true }),
-    Categoria.find({ estado: true })
+  try {
+    const count = await Categoria.countDocuments({ estado: true });
+
+    const { limit, offset } = calculateLimitAndOffset(currentPage, pageSize);
+
+    const rows = await Categoria.find({ estado: true })
       .populate("usuario")
-      .limit(Number(limite))
-      .skip(Number(desde)),
-  ]);
+      .sort({ nombre: ad })
+      .skip(offset)
+      .limit(limit);
 
-  res.json({
-    total,
-    categorias,
-  });
+    const meta = paginate(currentPage, count, rows, pageSize);
+
+    return res.status(200).json({
+      rows,
+      meta
+    })
+
+  } catch (error) {
+    console.log(error);
+  }
+
+ 
 };
 //obtenerCategorias - populate  {}
 
@@ -54,6 +67,7 @@ const crearCategoria = async (req, res = response) => {
 
   // Guardar en la base de datos
 
+  await categoria.populate("usuario", "nombre");
   await categoria.save();
 
   res.status(201).json(categoria);

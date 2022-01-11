@@ -1,36 +1,23 @@
-const {Schema, model} = require("mongoose");
+const {DataTypes} =require('sequelize')
+const { db } = require('../DB/config')
 
-const BodegaSchema = Schema({
+const Bodega = db.define('Bodega',{
 
-    nombre: {
-        type: String,
-        required: [true, "El nombre es obligatorio"],
-        unique: true,
-        
-    },
+    nombre:{
+        type:DataTypes.STRING,
+        allowNull:false
+    }, 
     local:{
-        type: String,
-        required: [true, "La localización es obligatoria"]
-    },
+        type:DataTypes.STRING,
+        allowNull:false
+    }, 
     estado:{
-        type:Boolean,
-        required: [true, "El estado es obligatorio"],
-        default: true
-    }
-
-});
-
+        type:DataTypes.BOOLEAN,
+        allowNull:false,
+        defaultValue: true
+    }, 
+})
 
 
-BodegaSchema.methods.toJSON = function(){
+module.exports = {Bodega}
 
-    //Separamos los datos que no queremos mostrar y el resto los agrupamos
-    //En este caso no quiero mostrar la version ni la password
-    const {__v,  _id ,...bodega} = this.toObject();
-
-    bodega.uid = _id;
-
-    return bodega 
-}
-
-module.exports = model("Bodega", BodegaSchema)

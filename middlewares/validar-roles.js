@@ -26,9 +26,10 @@ const bodegaRole = async (req, res = response, next) => {
     });
   }
 
-  const { rol, nombre } = req.usuario;
 
-  if (rol !== "BODEGA_ROLE") {
+  const { RolId, nombre } = req.usuario.dataValues;
+
+  if (RolId !== 2) {
     return res.status(401).json({
       msg: ` ${nombre} no es un usuario BODEGA - No puede hacer esto`,
     });

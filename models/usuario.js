@@ -1,52 +1,28 @@
+const {DataTypes} =require('sequelize')
+const { db } = require('../DB/config')
+const { Rol } = require('./role')
 
-
-const { Schema, model} = require('mongoose');
-
-const UsuarioSchema = Schema({
-
+const Usuario = db.define('Usuario',{
     nombre:{
-        type: String,
-        required: [true, 'El nombre es obligatiorio'],
-        
-    },
+        type:DataTypes.STRING,
+        allowNull:false
+    }, 
     correo:{
-        type: String,
-        required: [true, 'El correo es obligatiorio'],
-        unique: true
-
+        type:DataTypes.STRING,
+        allowNull:false
     },
     password:{
-        type: String,
-        required: [true, 'La contraseña es obligatioria'],
-        
-    },
-    img:{
-        type: String,
-        
-    },
-    rol:{
-        type: String,
-        required: true,
-        enum: ['ADMIN_ROLE', 'BODEGA_ROLE', 'MANTENCION_ROLE','USER_ROLE'] 
-    },
-    estado:{
-        type: Boolean,
-        default : true
+        type:DataTypes.STRING,
+        allowNull:false
     }, 
-    
+    estado:{
+        type:DataTypes.BOOLEAN,
+        allowNull:false,
+        defaultValue: true
+    } 
 
-});
+})
 
-//Tiene que ser una funcion normal para poder usar el "this"
-UsuarioSchema.methods.toJSON = function(){
+Usuario.Rol = Usuario.belongsTo(Rol)
 
-    //Separamos los datos que no queremos mostrar y el resto los agrupamos
-    //En este caso no quiero mostrar la version ni la password
-    const {__v, password, _id ,...usuario} = this.toObject();
-
-    usuario.uid = _id;
-
-    return usuario 
-}
-
-module.exports = model('Usuario', UsuarioSchema);
+module.exports = {Usuario}

@@ -9,6 +9,7 @@ const {
   obtenerCategoria,
   actualizarCategoria,
   borrarCategoria,
+  comboCategoria
 } = require("../controllers");
 
 const {
@@ -27,6 +28,9 @@ const router = Router();
 
 //Obtener todas las categorias
 router.get("/",[validarJWT, validarCampos] ,obtenerCategorias);
+
+//Obetenr combo
+router.get("/combo",[validarJWT, validarCampos] ,comboCategoria);
 
 //Obtener una categoria por id
 router.get(

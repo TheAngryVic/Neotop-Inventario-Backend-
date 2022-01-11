@@ -1,10 +1,13 @@
-const { Categoria, Role, Modelo, Bodega, Producto } = require("../models");
-const Usuario = require("../models/usuario");
+const { Categoria, Rol, Usuario,Modelo, Bodega, Producto } = require("../models");
 
 
 const rolValido = async (rol = "") => {
-  const existeRol = await Role.findOne({ rol });
-  if (!existeRol) {
+    let arrayAsist=[]
+  const existeRol = await Rol.findAll();
+  existeRol.forEach(element => {
+    arrayAsist.push(element.dataValues.nombre);
+  });
+  if (!arrayAsist.includes(rol)) {
     throw new Error(` El rol  ${rol} no está registrado en la BD`);
   }
 };
@@ -13,8 +16,12 @@ const rolValido = async (rol = "") => {
 
 const existeEmail = async (correo = "")=>{
 
-    const existencia = await Usuario.findOne({correo});
-    if (existencia) {
+    const existencia = await Usuario.findAll({
+        where:{
+            correo
+        }
+    });
+    if (existencia.length>0) {
         throw new Error('El correo ya está registrado')
     }
 }
@@ -72,8 +79,8 @@ const existeModelo = async (nombre = "")=>{
 
 const existeBodegaxID = async (id = "")=>{
     
-    console.log("CTM", id);
-    const existencia = await Bodega.findById(id, {estado: true});
+    const existencia = await Bodega.findByPk(id,
+         {where:{estado: true}});
     if (!existencia) {
         throw new Error(`El ID: ${id}, no existe`);
     }
@@ -97,7 +104,7 @@ const existeSerie = async (nSerie = "")=>{
   
   if (existe) {
     throw new Error(`La serie ${nSerie} ya existe en la base de datos`);
-}
+    }
 }
 
 const existeProductoxID = async (id = "")=>{

@@ -1,83 +1,128 @@
 const { response, request } = require("express");
 const becrypter = require("bcryptjs");
-const Usuario = require("../models/usuario");
+const { Usuario } = require("../models/usuario");
 
 const usuariosGet = async (req = request, res = response) => {
   const { limite = 5, desde = 0 } = req.query;
-  //   const usuarios = await Usuario.find({estado: true})
-  //   .limit(Number(limite))
-  //   .skip(Number(desde));
-  //   const total = await Usuario.countDocuments({estado: true});
 
-  const [total, usuarios] = await Promise.all([
-    Usuario.countDocuments({ estado: true }),
-    Usuario.find({ estado: true }).limit(Number(limite)).skip(Number(desde)),
-  ]);
-
-  res.json({
-    total,
-    usuarios,
-  });
+  await Usuario.findAndCountAll({
+    where: { estado: true },
+  })
+    .then((rows) => {
+      res.status(200).json(rows);
+    })
+    .catch((error) => {
+      res.status(500).json({
+        error,
+      });
+    });
 };
 
 const usuariosPost = async (req, res) => {
   const { nombre, correo, password, rol } = req.body;
-  const usuario = new Usuario({ nombre, correo, password, rol });
+  let role;
 
-  //Verificar si correo existe
+  switch (rol) {
+    case "ADMIN_ROLE":
+      role = 1;
 
+      break;
+    case "BODEGA_ROLE":
+      role = 2;
+
+      break;
+    case "SERVICIO_ROLE":
+      role = 3;
+
+      break;
+    case "USER_ROLE":
+      role = 4;
+
+      break;
+  }
+
+  const data = {
+    nombre,
+    correo,
+    password,
+    RolId: role,
+  };
   // Encriptar contraseña
   const salt = becrypter.genSaltSync();
-  usuario.password = becrypter.hashSync(password, salt);
-
+  data.password = becrypter.hashSync(password, salt);
   //Guardar DB
+  const usuario = new Usuario(data);
   await usuario.save();
-  res.json({
-    msg: "post API - Controller",
+  res.status(200).json({
+    msg: `Usuario: ${nombre} creado con exito`,
     usuario,
   });
 };
 
 const usuariosPut = async (req, res) => {
   const { id } = req.params;
-  const { _id, password, google, correo, ...resto } = req.body;
+  const { _id, password, rol, correo, ...resto } = req.body;
+  let role;
 
   if (password) {
     const salt = becrypter.genSaltSync();
     resto.password = becrypter.hashSync(password, salt);
   }
 
-  const usuario = await Usuario.findByIdAndUpdate(id, resto);
+  if (rol) {
+    switch (rol) {
+      case "ADMIN_ROLE":
+        role = 1;
+        resto.RolId = role
+  
+        break;
+      case "BODEGA_ROLE":
+        role = 2;
+        resto.RolId = role
+
+  
+        break;
+      case "SERVICIO_ROLE":
+        role = 3;
+        resto.RolId = role
+
+  
+        break;
+      case "USER_ROLE":
+        role = 4;
+        resto.RolId = role 
+        break;
+    }
+    
+  }
+
+  const usuario = await Usuario.update(
+    {resto},{where:{id}}
+  )
 
   res.json({
     usuario,
   });
 };
 
-const usuariosPatch = (req, res) => {
-  res.json({
-    msg: "patch API - Controller",
-  });
-};
 
 const usuariosDelete = async (req, res) => {
+  const { id } = req.params;
 
-    const { id } = req.params;
+  const usuario_autenticado = req.usuario;
 
-    const usuario_autenticado = req.usuario;
+  //Fisicamente lo borramos
+  // const usuario = await Usuario.findOneAndDelete(id);
 
+  //Actualmente no es recomendado eliminar los registros, ahora se le cambia el estado
 
-    //Fisicamente lo borramos
-    // const usuario = await Usuario.findOneAndDelete(id);
+  const usuario = await Usuario.update(
+    {estado:false},{where:{id}}
+  )
 
-    //Actualmente no es recomendado eliminar los registros, ahora se le cambia el estado
-
-    const usuario_eliminado = await Usuario.findByIdAndUpdate(id, {estado: false});
-
-
-  res.json({ 
+  res.json({
     usuario_autenticado,
-    usuario_eliminado
+    usuario,
   });
 };
 module.exports = {
@@ -85,5 +130,4 @@ module.exports = {
   usuariosPost,
   usuariosPut,
   usuariosDelete,
-  usuariosPatch,
 };

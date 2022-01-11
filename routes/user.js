@@ -55,17 +55,16 @@ router.put(
   usuariosPut
 );
 
-router.patch("/", usuariosPatch);
 
 router.delete(
   "/:id",
   [
-    validarJWT,
+    // validarJWT,
     // adminRole,
-    tieneRole("VENTAS_ROLE"),
-    check("id", "No es un ID valido").isMongoId(),
-    check("id").custom(existeUsuarioxID),
-    validarCampos,
+    // tieneRole("VENTAS_ROLE"),
+    // check("id", "No es un ID valido").isMongoId(),
+    // check("id").custom(existeUsuarioxID),
+    // validarCampos,
   ],
   usuariosDelete
 );

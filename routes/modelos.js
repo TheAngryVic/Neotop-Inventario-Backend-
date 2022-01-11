@@ -6,6 +6,7 @@ const {
   obtenerModelo,
   actualizarModelos,
   borrarModelos,
+  comboModelo
 } = require("../controllers");
 const { validarCampos, validarJWT } = require("../middlewares");
 const { bodegaRole } = require("../middlewares");
@@ -18,6 +19,10 @@ const router = Router();
 
 //obtener todos los modelos
 router.get("/", [validarJWT, validarCampos], obtenerModelos);
+
+//Obetenr combo
+router.get("/combo",[validarJWT, validarCampos] ,comboModelo);
+
 
 //obteber modelo por id
 router.get(

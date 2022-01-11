@@ -1,34 +1,21 @@
-const { Schema, model } = require("mongoose");
+const {DataTypes} =require('sequelize')
+const { db } = require('../DB/config')
 
-const CategoriaSchema = Schema({
-  nombre: {
-    type: String,
-    required: [true, "El nombre es obligatorio"],
-    unique:true
-  },
-  estado: {
-    type: Boolean,
-    default: true,
-    required: true,
-  },
-  usuario: {
-    type: Schema.Types.ObjectId,
-    ref: "Usuario",
-    required: true,
-  },
-});
+const Categoria = db.define('Categoria',{
+
+    nombre:{
+      type:DataTypes.STRING,
+      allowNull:false
+    },
+    estado:{
+      type:DataTypes.BOOLEAN,
+      allowNull:false,
+      defaultValue: true
+  } 
+
+})
+
+module.exports = {Categoria}
 
 
-//Tiene que ser una funcion normal para poder usar el "this"
-CategoriaSchema.methods.toJSON = function(){
 
-  //Separamos los datos que no queremos mostrar y el resto los agrupamos
-  //En este caso no quiero mostrar la version ni la password
-  const {__v,  _id ,...categoria} = this.toObject();
-
-  categoria.uid = _id;
-
-  return categoria 
-}
-
-module.exports = model("Categoria", CategoriaSchema);

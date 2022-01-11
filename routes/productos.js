@@ -15,12 +15,12 @@ const router = Router();
  */
 
 //Obtener todas los productos
-router.get("/", obtenerProductos);
+router.get("/",[validarJWT, validarCampos] ,obtenerProductos);
 
 //Obtener un producto por id
 router.get(
   "/:id",
-  [
+  [ validarJWT,
     check("id", "El id ingresado no es un id de mongo").isMongoId(),
     check("id").custom(existeProductoxID),
     validarCampos,
@@ -57,7 +57,6 @@ router.put(
     check("modelo").optional().custom(existeModeloxID),
     check("bodega","La bodega debe ser un id de Mongo valido").optional().isMongoId(),
     check("bodega").optional().custom(existeBodegaxID),
-    check("nSerie").optional().custom(existeSerie),
     validarCampos,
   ],
   actualizarProducto

@@ -23,14 +23,11 @@ const obtenerCategorias = async (req, res = response) => {
 
     return res.status(200).json({
       rows,
-      meta
-    })
-
+      meta,
+    });
   } catch (error) {
     console.log(error);
   }
-
- 
 };
 //obtenerCategorias - populate  {}
 
@@ -123,9 +120,16 @@ const borrarCategoria = async (req, res = response) => {
   });
 };
 
+const comboCategoria = async (req, res = response) => {
+  const combo = await Categoria.find({ estado: true }, "uid nombre");
+
+  return res.json(combo);
+};
+
 module.exports = {
   actualizarCategoria,
   borrarCategoria,
+  comboCategoria,
   crearCategoria,
   obtenerCategoria,
   obtenerCategorias,

@@ -75,7 +75,8 @@ const crearModelos = async (req, res = response) => {
   const nombre = req.body.nombre.toUpperCase();
 
   //Verificaremos si existe modelo en la DB
-  const modeloDB = await Modelo.findOne({ nombre });
+  const modeloDB = await Modelo.findOne({ nombre })
+ 
 
   if (modeloDB) {
     return res.status(403).json({
@@ -92,6 +93,8 @@ const crearModelos = async (req, res = response) => {
 
   const modelo = new Modelo(data);
 
+  await modelo.populate("usuario")
+  await modelo.populate("categoria")
   await modelo.save();
 
   res.status(201).json(modelo);
@@ -129,13 +132,20 @@ const borrarModelos = async (req, res = response) => {
     .populate("usuario", "nombre")
     .populate("categoria", "nombre");
 
-  res.status(200).json({ modelo });
+  res.status(200).json({ msg:`${modelo.nombre} eliminado`,modelo });
+};
+
+const comboModelo = async (req, res = response) => {
+  const combo = await Modelo.find({ estado: true }, "uid nombre");
+
+  return res.json(combo);
 };
 
 module.exports = {
   actualizarModelos,
   borrarModelos,
+  comboModelo,
   crearModelos,
-  obtenerModelos,
   obtenerModelo,
+  obtenerModelos,
 };

@@ -1,17 +1,13 @@
 const {DataTypes} =require('sequelize')
 const { db } = require('../DB/config')
-const { Rol } = require('./role')
 
-const Usuario = db.define('Usuario',{
+const Bodega = db.define('Bodega',{
+
     nombre:{
         type:DataTypes.STRING,
         allowNull:false
     }, 
-    correo:{
-        type:DataTypes.STRING,
-        allowNull:false
-    },
-    password:{
+    local:{
         type:DataTypes.STRING,
         allowNull:false
     }, 
@@ -19,10 +15,9 @@ const Usuario = db.define('Usuario',{
         type:DataTypes.BOOLEAN,
         allowNull:false,
         defaultValue: true
-    } 
-
+    }, 
 })
 
-Usuario.Rol = Usuario.belongsTo(Rol)
 
-module.exports = {Usuario}
+module.exports = {Bodega}
+

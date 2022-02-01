@@ -2,17 +2,36 @@ const { response } = require("express");
 const { rawListeners } = require("../models/usuario");
 
 const adminRole = async (req, res = response, next) => {
-  if (!req.usuarioAutenticado) {
+  if (!req.usuario) {
     return res.status(500).json({
       msg: "Se quiere verificar rol sin validar Token primero",
     });
   }
 
-  const { rol, nombre } = req.usuarioAutenticado;
+  const { rol, nombre } = req.usuario;
 
   if (rol !== "ADMIN_ROLE") {
     return res.status(401).json({
       msg: ` ${nombre} no es un Administrador - No puede hacer esto`,
+    });
+  }
+
+  next();
+};
+
+const bodegaRole = async (req, res = response, next) => {
+  if (!req.usuario) {
+    return res.status(500).json({
+      msg: "Se quiere verificar rol sin validar Token primero",
+    });
+  }
+
+
+  const { RolId, nombre } = req.usuario.dataValues;
+
+  if (RolId !== 2) {
+    return res.status(401).json({
+      msg: ` ${nombre} no es un usuario BODEGA - No puede hacer esto`,
     });
   }
 
@@ -24,13 +43,16 @@ const tieneRole = (...roles)=>{
 
     return (req, res = response, next)=>{
 
-        if (!req.usuarioAutenticado) {
+        if (!req.usuario) {
             return res.status(500).json({
               msg: "Se quiere verificar rol sin validar Token primero",
             });
         }
 
-        const {rol, nombre} =req.usuarioAutenticado;
+        const {rol, nombre} =req.usuario;
+
+        console.log(rol)
+        console.log("esto es roles_ "+ roles)
         
         if (!roles.includes(rol)) {
 
@@ -50,5 +72,6 @@ const tieneRole = (...roles)=>{
 
 module.exports = {
   adminRole,
-  tieneRole
+  tieneRole,
+  bodegaRole
 };

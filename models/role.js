@@ -1,11 +1,12 @@
-const {Schema, model} = require("mongoose");
+const {DataTypes} =require('sequelize')
+const { db } = require('../DB/config')
 
-const RolSchema = Schema({
+const Rol = db.define('Rol',{
+    nombre:{
+        type:DataTypes.STRING,
+        allowNull:false
+    } 
 
-    rol: {
-        type: String,
-        required: [true, "El rol es obligatorio"]
-    }
-});
+})
 
-module.exports = model("Role", RolSchema)
+module.exports = {Rol}

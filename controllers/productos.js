@@ -1,5 +1,5 @@
 const { response } = require("express");
-const { Categoria, Producto, Modelo, Bodega, Usuario } = require("../models");
+const { Categoria, Producto, Modelo, Bodega, Usuario, Movimiento } = require("../models");
 
 const ObjectId = require("mongodb").ObjectId;
 
@@ -116,7 +116,16 @@ const cargaMasivaProducto = async (req, res = response) => {
           BodegaId: row.BodegaId,
           UsuarioId: user,
         })
-        .then(r=>{
+        .then(async (r)=>{
+          let bodegaName = await Bodega.findByPk(row.BodegaId, {attributes:['nombre'], raw:true});
+
+
+          let movimiento = await Movimiento.create({
+            local_nuevo:bodegaName.nombre,
+            fecha:Date.now(),
+            ProductoId: r.id        
+          })
+
           return res.status(200).json({
             msg:"Funciona!"
             ,r
@@ -327,6 +336,15 @@ const crearProducto = async (req, res = response) => {
           where: { estado: true },
         });
 
+        let bodegaName = await Bodega.findByPk(data.BodegaId,{attributes: ["nombre"], raw:true})
+
+        //Metemos los datos a la tabla movimiento
+        let movimiento = await Movimiento.create({
+          local_nuevo:bodegaName.nombre,
+          fecha:Date.now(),
+          ProductoId: producto_.id        
+        })
+
         res.status(201).json({
           msg: `Producto: ${producto.nSerie} agregado`,
           producto,
@@ -372,6 +390,10 @@ const actualizarProducto = async (req, res = response) => {
 
   try {
     const productoDB = await Producto.findByPk(id);
+    const _productoDB = await Producto.findByPk(id,{raw:true});
+    const originalName = await Bodega.findByPk(_productoDB.BodegaId,{attributes: ["nombre"], raw:true});
+    const nuevoName = await Bodega.findByPk(data.BodegaId,{attributes: ["nombre"], raw:true});
+    console.log("Producto db", _productoDB);
 
     await productoDB.update(data, {
       where: id,
@@ -382,6 +404,14 @@ const actualizarProducto = async (req, res = response) => {
       include: [{ all: true, attributes: ["id", "nombre"] }],
       where: { estado: true },
     });
+
+      //Metemos los datos a la tabla movimiento
+      let movimiento = await Movimiento.create({
+        local_original:originalName.nombre,
+        local_nuevo:nuevoName.nombre,
+        fecha:Date.now(),
+        ProductoId: id        
+      })
 
     res.status(200).json({
       msg: `Producto: ${producto.nSerie}`,

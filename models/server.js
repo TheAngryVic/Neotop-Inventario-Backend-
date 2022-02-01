@@ -11,6 +11,7 @@ class Server {
       bodegas: "/api/bodegas",
       categorias: "/api/categorias",
       modelos: "/api/modelos",
+      movimientos: "/api/movimientos",
       productos: "/api/productos",
       usuarios: "/api/usuarios",
     };
@@ -54,6 +55,7 @@ class Server {
     this.app.use(this.paths.bodegas, require("../routes/bodegas"));
     this.app.use(this.paths.categorias, require("../routes/categorias"));
     this.app.use(this.paths.modelos, require("../routes/modelos"));
+    this.app.use(this.paths.movimientos, require("../routes/movimientos"));
     this.app.use(this.paths.productos, require("../routes/productos"));
     this.app.use(this.paths.usuarios, require("../routes/user"));
   }

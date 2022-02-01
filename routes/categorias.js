@@ -9,7 +9,8 @@ const {
   obtenerCategoria,
   actualizarCategoria,
   borrarCategoria,
-  comboCategoria
+  comboCategoria,
+  cargaMasiva
 } = require("../controllers");
 
 const {
@@ -26,6 +27,10 @@ const router = Router();
  * {{url/api/categorias}}
  */
 
+//Carga masiva
+
+router.post("/masivo",[validarJWT, validarCampos] ,cargaMasiva);
+
 //Obtener todas las categorias
 router.get("/",[validarJWT, validarCampos] ,obtenerCategorias);
 
@@ -36,7 +41,7 @@ router.get("/combo",[validarJWT, validarCampos] ,comboCategoria);
 router.get(
   "/:id",
   [
-    check("id", "El id ingresado no es un id de mongo").isMongoId(),
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeCategoriaxID),
     validarCampos,
   ],
@@ -50,7 +55,6 @@ router.post(
     validarJWT,
     bodegaRole,
     check("nombre", "El nombre es obligatorio").not().isEmpty(),
-    check("nombre").custom(existeCategoria),
     validarCampos,
   ],
   crearCategoria
@@ -62,9 +66,8 @@ router.put(
   [
     validarJWT,
     bodegaRole,
-    check("id", "El id ingresado no es un id de mongo").isMongoId(),
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeCategoriaxID),
-    check("nombre").custom(existeCategoria),
     validarCampos,
   ],
   actualizarCategoria
@@ -76,7 +79,7 @@ router.delete(
   [
     validarJWT,
     bodegaRole,
-    check("id", "El id ingresado no es un id de mongo").isMongoId(),
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeCategoriaxID),
     validarCampos,
   ],

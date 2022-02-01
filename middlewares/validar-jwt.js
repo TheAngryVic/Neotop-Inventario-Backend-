@@ -19,7 +19,6 @@ const validarJWT = async (req, res = response, next) => {
 
     //Tarea, traer al usuario autenticado
     const usuario = await Usuario.findByPk(uid).then((user) => {
-      req.usuario = user;
       if (!user) {
         return res.status(401).json({
           msg: "Usuario no existe en la data base",
@@ -31,7 +30,7 @@ const validarJWT = async (req, res = response, next) => {
           msg: "Token no valido- Usuario inactivo",
         });
       }
-
+      req.usuario = user;      
       next();
     });
 

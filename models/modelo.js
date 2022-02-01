@@ -15,7 +15,8 @@ const Modelo = db.define('Modelo',
     }, 
     stock_minimo:{
         type:DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true,
+        defaultValue:0
     }, 
 })
 

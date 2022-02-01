@@ -1,59 +1,263 @@
 const { response } = require("express");
-const { Categoria, Producto, Modelo } = require("../models");
+const { Categoria, Producto, Modelo, Bodega, Usuario } = require("../models");
 
 const ObjectId = require("mongodb").ObjectId;
 
 const { calculateLimitAndOffset, paginate } = require("paginate-info");
+const { Op } = require("sequelize");
+const sequelize = require("sequelize");
 
+// Consultar esto en la base de datos si llega salir el error el modelo.id
+// SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
+
+//Carga masiva
+const cargaMasivaProducto = async (req, res = response) => {
+  //User
+  const user = req.usuario.dataValues.id;
+  //Objeto a recuperar
+  const body = req.body;
+  //Array para los modelos y validar si existen antes de insertar datos
+  let bodyModeloArray = [];
+  //Array para los bodegas y validar si existen antes de insertar datos
+  let bodyBodegaArray = [];
+  // Array para las nSerie de los productos de Body
+  let bodyArray = [];
+  //Le pusheamos los valores
+  body._value.forEach((e) => {
+    bodyArray.push(e.nSerie);
+    bodyModeloArray.push(e.ModeloId);
+    bodyBodegaArray.push(e.BodegaId);
+  });
+
+  try {
+    let arrayidBodegas=[]
+    let arrayidModelos=[]
+    let arraySeries=[]
+    const idBodegas = await Bodega.findAll({
+      attributes: ["id"],
+      where: { estado: true },
+      raw: true,
+    });
+    idBodegas.forEach(b => {
+      arrayidBodegas.push(b.id)
+    });
+    const idModelo = await Modelo.findAll({
+      attributes: ["id"],
+      where: { estado: true },
+      raw: true,
+    });
+    idModelo.forEach(m => {
+      arrayidModelos.push(m.id)
+    });
+
+    //Vamos a validar tanto las bodegas como los modelos (los id)
+    let bodegaCount = 0;
+    let modeloCount = 0;
+
+
+    for (let step = 0; step < bodyBodegaArray.length; step++) {
+      if (arrayidBodegas.includes(parseInt(bodyBodegaArray[step]))) {
+        bodegaCount++
+      }else{
+        console.log("NO hay");
+      }
+    }
+    for (let step = 0; step < bodyModeloArray.length; step++) {
+      if (arrayidModelos.includes(parseInt(bodyModeloArray[step]))) {
+        modeloCount++;
+      }else{
+        console.log("NO hay");
+      }
+    }  
+    
+    if (bodegaCount<bodyModeloArray.length) {
+      
+      return res.status(400).json({
+        msg:"Una bodega no existe en la base de datos, por favor revise los datos"
+      })
+    }
+    if (modeloCount<bodyModeloArray.length) {
+      
+      return res.status(400).json({
+        msg:"Un modelo no existe en la base de datos, por favor revise los datos"
+      })
+    }
+
+    //Validar si las nSerie no están en la base de datos
+    const seriesProductosDB = await Producto.findAll({
+      attributes: ["nSerie"],
+      where: { estado: true },
+      raw: true,
+    });
+
+    seriesProductosDB.forEach(s => {
+      arraySeries.push(s.nSerie)
+    });
+    //Aumentamos el contador de repetidos
+    let repite = 0;
+    for (let step = 0; step < bodyArray.length; step++) {
+      if (arraySeries.includes(bodyArray[step].toUpperCase())) {
+        repite++;
+      }else{
+        console.log("NO hay");
+      }
+    } 
+  
+
+    if (repite>0) {
+      return res.status(400).json({
+        msg: "Hay datos que ya existen en la base de datos, por favor revise los datos.",
+      });
+    } else {
+      body._value.forEach((row)=>{
+        Producto.create({
+          nSerie: row.nSerie.toUpperCase(),
+          ModeloId: row.ModeloId,
+          BodegaId: row.BodegaId,
+          UsuarioId: user,
+        })
+        .then(r=>{
+          return res.status(200).json({
+            msg:"Funciona!"
+            ,r
+          })
+        }).catch(e=>{
+          return res.status(500).json({
+            msg:e
+          })
+        })
+      })
+    }
+
+    console.log("Se repiten?", repite);
+  } catch (error) {}
+};
+
+const obetenerInventario = async (req, res = response) => {
+  const { currentPage = 1, pageSize = 5, filter, sorter, desc } = req.query;
+
+  try {
+    const { limit, offset } = calculateLimitAndOffset(currentPage, pageSize);
+
+    const rows_count = await Producto.findAll({
+      attributes: [
+        "Modelo.nombre",
+        "Bodega.nombre",
+        [sequelize.fn("COUNT", "Producto.Id"), "Cantidad"],
+      ],
+      include: [Modelo, Bodega],
+      where: { estado: true },
+      group: ["Modelo.nombre", "Bodega.nombre"],
+      raw: true,
+    });
+
+    let rows;
+
+    if (filter) {
+      rows = await Producto.findAll({
+        attributes: [
+          "Modelo.nombre",
+          "Bodega.nombre",
+          [sequelize.fn("COUNT", "Producto.Id"), "Cantidad"],
+        ],
+        include: [Modelo, Bodega],
+        where: { estado: true },
+        having: { "Modelo.nombre": { [Op.like]: `%${filter}%` } },
+        group: ["Modelo.nombre", "Bodega.nombre"],
+      });
+    } else {
+      if (sorter) {
+        console.log("TRUE/FALSE", desc);
+        let asc_desc = desc === "true" ? "DESC" : "ASC";
+
+        //Vamos a preguntar si el 'sorter' es Cantidad
+        let conOSinNombre =
+          sorter == "Cantidad" ? "Cantidad" : `${sorter}.nombre`;
+        rows = await Producto.findAll({
+          attributes: [
+            "Modelo.nombre",
+            "Bodega.nombre",
+            [sequelize.fn("COUNT", "Producto.Id"), "Cantidad"],
+          ],
+          include: [Modelo, Bodega],
+          where: { estado: true },
+          group: ["Modelo.nombre", "Bodega.nombre"],
+          order: [[sequelize.col(conOSinNombre), asc_desc]],
+          offset: offset,
+          limit: limit,
+        });
+      } else {
+        rows = await Producto.findAll({
+          attributes: [
+            "Modelo.nombre",
+            "Bodega.nombre",
+            [sequelize.fn("COUNT", "Producto.Id"), "Cantidad"],
+          ],
+          include: [Modelo, Bodega],
+          where: { estado: true },
+          group: ["Modelo.nombre", "Bodega.nombre"],
+          order: [[sequelize.col("Cantidad"), "DESC"]],
+          offset: offset,
+          limit: limit,
+        });
+      }
+    }
+
+    const count = rows_count.length;
+
+    const meta = paginate(currentPage, count, rows, pageSize);
+
+    console.log(meta);
+
+    return res.status(200).json({
+      rows,
+      meta,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 //obtenerProductos - paginado - total - populate
 
 const obtenerProductos = async (req, res = response) => {
-  const { currentPage, pageSize, ad = "1" } = req.query;
+  const { currentPage = 1, pageSize = 5, filter, sorter, desc } = req.query;
 
   try {
-    const count = await Producto.countDocuments({ estado: true });
+    const count = await Producto.count({ where: { estado: true } });
     const { limit, offset } = calculateLimitAndOffset(currentPage, pageSize);
 
-    const rows = await Producto.aggregate([
-      {$addFields:{ "modelo_id":{$toString: '$_id'}}},
-      {
-        $lookup:
-        {
-           from: 'Modelo',
-           localField: "modelo_id",
-           foreignField: "_id" ,
-           as: "modelo_info"
-       }
-      },
-      // {$group:{
-      //   _id:"$modelo",
-      //   total:{$sum:1},
-      //   modelos:{$push:'$modelo'}
-      // }},
-      // { $project: { modelos:1 , total: 1, _id: 0,  } },
-    ])
-      // .skip(offset)
-      // .limit(limit);
+    let rows;
+    if (filter) {
+      rows = await Producto.findAll({
+        attributes: ["id", "nSerie", "disponible"],
+        include: [{ all: true, attributes: ["id", "nombre"] }],
+        where: { estado: true },
+        having: { "Modelo.nombre": { [Op.like]: `%${filter}%` } },
+      });
+    } else {
+      if (sorter) {
+        let asc_desc = desc === "true" ? "DESC" : "ASC";
+        let conOSinNombre = sorter == "nSerie" ? "nSerie" : `${sorter}.nombre`;
 
-      
-      const populateQuery = {
-            path: 'modelos',
-      };
-
-     await Producto.populate(rows,populateQuery,(e,r)=>{
-      if (e) {
-        console.log(e);
+        rows = await Producto.findAll({
+          attributes: ["id", "nSerie", "disponible"],
+          include: [{ all: true, attributes: ["id", "nombre"] }],
+          where: { estado: true },
+          order: [[sequelize.col(conOSinNombre), asc_desc]],
+          offset: offset,
+          limit: limit,
+        });
       } else {
-        console.log(rows);
+        rows = await Producto.findAll({
+          attributes: ["id", "nSerie", "disponible"],
+          include: [{ all: true, attributes: ["id", "nombre"] }],
+          where: { estado: true },
+          order: [[sequelize.col("Modelo.nombre"), "ASC"]],
+          offset: offset,
+          limit: limit,
+        });
       }
-    })
-
-    // console.log(populatedRow);
-
-
-
-    // await rows.populate('modelo',"nombre").execPopulate()
-   
+    }
 
     const meta = paginate(currentPage, count, rows, pageSize);
 
@@ -81,54 +285,111 @@ const obtenerProductos = async (req, res = response) => {
 const obtenerProducto = async (req, res = response) => {
   const { id } = req.params;
 
-  const producto = await Producto.findById(id)
-    .populate("usuario", "nombre")
-    .populate("modelo", "nombre")
-    .populate("bodega", "nombre");
-
+  const producto = await Producto.findByPk(id, {
+    attributes: ["id", "nSerie", "disponible"],
+    include: [{ all: true, attributes: ["id", "nombre"] }],
+    where: { estado: true },
+  });
   res.json({ producto });
 };
 
 const crearProducto = async (req, res = response) => {
-  const { usuario, ...data } = req.body;
+  const { usuario, ...resto } = req.body;
 
   //generar data
+  resto.usuario = req.usuario.dataValues.id;
 
-  data.usuario = req.usuario._id;
+  const data = {
+    nSerie: resto.nSerie,
+    ModeloId: resto.modelo,
+    BodegaId: resto.bodega,
+    UsuarioId: resto.usuario,
+  };
 
-  const producto = new Producto(data);
+  const productoDB = await Producto.findOrCreate({
+    where: { nSerie: data.nSerie },
+    defaults: {
+      nSerie: data.nSerie,
+      ModeloId: data.ModeloId,
+      BodegaId: data.BodegaId,
+      UsuarioId: data.UsuarioId,
+    },
+  }).then(([producto_, created]) => {
+    if (!created) {
+      return res.status(400).json({
+        msg: "Ya existe un producto registrado con la serie",
+      });
+    } else {
+      const forzarAsync = async () => {
+        let producto = await Producto.findByPk(producto_.id, {
+          attributes: ["id", "nSerie", "disponible"],
+          include: [{ all: true, attributes: ["id", "nombre"] }],
+          where: { estado: true },
+        });
 
-  // Guardar en la base de datos
-  await producto.save();
-
-  await producto.populate("modelo", "nombre");
-  await producto.populate("bodega", "nombre");
-  await producto.populate("usuario", "nombre");
-
-  res.status(201).json(producto);
+        res.status(201).json({
+          msg: `Producto: ${producto.nSerie} agregado`,
+          producto,
+        });
+      };
+      forzarAsync();
+    }
+  });
 };
 
 //actualizar categoria
 
 const actualizarProducto = async (req, res = response) => {
   const { id } = req.params;
-  const { estado, usuario, fecha_ingreso, ...data } = req.body;
+  const { estado, usuario, fecha_ingreso, ...resto } = req.body;
 
-  if (Object.entries(data).length === 0) {
+  if (Object.entries(resto).length === 0) {
     return res.status(500).json({ msg: "El objeto viene vacio" });
   }
 
-  data.usuario = req.usuario._id;
+  resto.usuario = req.usuario.dataValues.id;
 
-  data.modelo = ObjectId(data.modelo);
+  const data = {
+    nSerie: resto.nSerie,
+    ModeloId: resto.modelo,
+    BodegaId: resto.bodega,
+    UsuarioId: resto.usuario,
+    cliente: resto.cliente,
+  };
 
-  console.log(data);
+  //VALIDACION DE SERIE
+  if (data.nSerie) {
+    const existe = await Producto.findAll({
+      where: { nSerie: data.nSerie, [Op.not]: [{ id }] },
+    });
 
-  const producto = await Producto.findByIdAndUpdate(id, data, { new: true });
+    if (existe.length > 0) {
+      return res.status(400).json({
+        msg: `La serie: ${data.nSerie} ya está registrada en la base de datos`,
+      });
+    }
+  }
 
-  res.status(200).json({
-    producto,
-  });
+  try {
+    const productoDB = await Producto.findByPk(id);
+
+    await productoDB.update(data, {
+      where: id,
+    });
+
+    const producto = await Producto.findByPk(id, {
+      attributes: ["id", "nSerie", "disponible"],
+      include: [{ all: true, attributes: ["id", "nombre"] }],
+      where: { estado: true },
+    });
+
+    res.status(200).json({
+      msg: `Producto: ${producto.nSerie}`,
+      producto,
+    });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 //borrar categoria- estado:false
@@ -140,21 +401,25 @@ const borrarProducto = async (req, res = response) => {
   data.usuario = req.usuario._id;
   data.estado = false;
 
-  const producto = await Producto.findByIdAndUpdate(id, data, { new: true })
-    .populate("usuario", "nombre")
-    .populate("modelo", "nombre")
-    .populate("bodega", "nombre");
+  try {
+    const productoDB = await Producto.findByPk(id);
 
-  res.status(200).json({
-    producto,
-    msg: `Producto ${producto.modelo.nombre} N°: ${producto.nSerie} eliminado`,
-  });
+    const producto = await productoDB.update(data, { where: id });
+    res.status(200).json({
+      producto,
+      msg: `Producto N°: ${producto.nSerie} eliminado`,
+    });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 module.exports = {
   actualizarProducto,
   borrarProducto,
   crearProducto,
+  obetenerInventario,
   obtenerProducto,
   obtenerProductos,
+  cargaMasivaProducto,
 };

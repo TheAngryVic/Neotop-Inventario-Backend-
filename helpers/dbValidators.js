@@ -39,10 +39,12 @@ const existeUsuarioxID = async (id = "")=>{
 
 const existeCategoriaxID = async (id = "")=>{
 
-    const existencia = await Categoria.findById(id);
-    if (!existencia) {
-        throw new Error(`El ID: ${id}, no existe`);
-    }
+    const existencia = await Categoria.findByPk(id,
+        {where:{estado: true}});
+   if (!existencia) {
+       throw new Error(`El ID: ${id}, no existe`);
+   }
+   
 }
 
 const existeCategoria = async (nombre = "")=>{
@@ -59,7 +61,7 @@ const existeCategoria = async (nombre = "")=>{
 
 const existeModeloxID = async (id = "")=>{
 
-    const existencia = await Modelo.findById(id);
+    const existencia = await Modelo.findByPk(id);
     if (!existencia) {
         throw new Error(`El ID: ${id}, no existe`);
     }
@@ -100,7 +102,7 @@ const existeBodega = async (nombre = "")=>{
 
 const existeSerie = async (nSerie = "")=>{
       //Preguntar por nSerie 
-  const existe = await Producto.findOne({nSerie})
+  const existe = await Producto.findAll({nSerie})
   
   if (existe) {
     throw new Error(`La serie ${nSerie} ya existe en la base de datos`);
@@ -109,7 +111,7 @@ const existeSerie = async (nSerie = "")=>{
 
 const existeProductoxID = async (id = "")=>{
 
-    const existencia = await Producto.findById(id, {estado: true});
+    const existencia = await Producto.findByPk(id, {where:{estado: true}});
     if (!existencia) {
         throw new Error(`El ID: ${id}, no existe`);
     }

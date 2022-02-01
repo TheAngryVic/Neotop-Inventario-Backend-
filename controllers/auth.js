@@ -43,7 +43,7 @@ const login = async (req, res = response) => {
          * la cual es async()
          */
         let forzarToken = async()=>{
-          const token = await generarJWT( user[0].dataValues.id, user[0].dataValues.nombre, user[0].dataValues.rol);
+          const token = await generarJWT( user[0].dataValues.id, user[0].dataValues.nombre, user[0].dataValues.RolId);
           
           res.status(200).json({token,user})
         }

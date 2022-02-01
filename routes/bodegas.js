@@ -6,13 +6,17 @@ const {
   actualizarBodega,
   borrarBodega,
   crearBodega,
-  comboBodega
+  comboBodega,
+  cargaMasivaBodega
 } = require("../controllers");
 const { existeBodegaxID, existeBodega } = require("../helpers/dbValidators");
 const { validarJWT, bodegaRole } = require("../middlewares");
 const { validarCampos } = require("../middlewares/validar-Campos");
 
 const router = Router();
+
+//carga masiva
+router.post('/masivo',[validarJWT, bodegaRole, validarCampos], cargaMasivaBodega)
 
 //Get todos
 router.get("/", [validarJWT, validarCampos], obtenerBodegas);
@@ -26,6 +30,7 @@ router.get(
   "/:id",
   [
     validarJWT,
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeBodegaxID),
     validarCampos,
   ],
@@ -51,7 +56,7 @@ router.put(
   [
     validarJWT,
     bodegaRole,
-    check("id", "No es una id de mongo valido").isMongoId(),
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeBodegaxID),
     validarCampos,
   ],

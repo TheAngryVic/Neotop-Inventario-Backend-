@@ -6,7 +6,8 @@ const {
   obtenerModelo,
   actualizarModelos,
   borrarModelos,
-  comboModelo
+  comboModelo,
+  cargaMasivaModelo
 } = require("../controllers");
 const { validarCampos, validarJWT } = require("../middlewares");
 const { bodegaRole } = require("../middlewares");
@@ -16,6 +17,8 @@ const {
 } = require("../helpers/dbValidators");
 
 const router = Router();
+
+router.post('/masivo',[validarJWT, bodegaRole, validarCampos], cargaMasivaModelo)
 
 //obtener todos los modelos
 router.get("/", [validarJWT, validarCampos], obtenerModelos);
@@ -29,7 +32,7 @@ router.get(
   "/:id",
   [
     validarJWT,
-    check("id", "EL id ingresado no es un id valido"),
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeModeloxID),
     validarCampos,
   ],
@@ -43,7 +46,7 @@ router.post(
     validarJWT,
     bodegaRole,
     check("nombre", "Debe ingresar un nombre").not().isEmpty(),
-    check("categoria", "Categoria no es un id valido").isMongoId(),
+    check("categoria", "Categoria No es un id valido").isNumeric(),
     check("categoria").custom(existeCategoriaxID),
     check("stock_minimo").optional().isNumeric(),
     validarCampos,
@@ -57,9 +60,9 @@ router.put(
   [
     validarJWT,
     bodegaRole,
-    check("id", "El id ingresado no es un id de mongo").isMongoId(),
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeModeloxID),
-    check("categoria", "Categoria no es un id valido").optional().isMongoId(),
+    check("categoria", "Categoria no es un id valido").optional().isNumeric(),
     check("categoria").optional().custom(existeCategoriaxID),
     check("stock_minimo").optional().isNumeric(),
     validarCampos
@@ -73,7 +76,7 @@ router.delete(
   [
     validarJWT,
     bodegaRole,
-    check("id", "El id ingresado no es un id de mongo").isMongoId(),
+    check("id", "No es un id valido").isNumeric(),
     check("id").custom(existeModeloxID),
     validarCampos
   ],

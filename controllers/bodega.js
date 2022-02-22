@@ -47,33 +47,34 @@ const cargaMasivaBodega = async (req, res = response) => {
         msg: "Hay datos que ya existen en la base de datos, por favor revise los datos.",
       });
     } else {
+     try {
       body._value.forEach((row) => {
         const bodegaDB = Bodega.create({
           nombre: row.nombre.toUpperCase(),
           local: row.local.toUpperCase()
         })
           .then((result) => {
-            res.status(200).json({
-              result,
-              msg: "Funciona!",
-            });
-            console.log(result);
+            
           })
           .catch((err) => {
-            res.status(500).json({
-              msg: "Hubo un error inesperado, favor contactarse con administrador",
-              err,
-            });
+           
           });
       });
-    }
-    console.log("Se repite alguno?", repite);
 
-    console.log("Array bodega", arrayBodega);
-    console.log("bodyArray", bodyArray);
+      res.status(200).json({
+        msg: "Funciona!",
+      });
+     } catch (error) {
+      res.status(500).json({
+        msg: "Hubo un error inesperado, favor contactarse con administrador",
+        error ,
+      });
+     }
+    }
+
+  
   });
 
-  console.log(body._value);
 };
 
 const obtenerBodegas = async (req, res = response) => {
@@ -90,7 +91,7 @@ const obtenerBodegas = async (req, res = response) => {
     if (filter) {
       //FILTROS
       rows = await Bodega.findAll({
-        where: { nombre: { [Op.like]: `%${filter}%` } },
+        where: {  estado:true ,nombre: { [Op.like]: `%${filter}%` } },
       });
     } else {
       if (sorter) {
@@ -166,7 +167,7 @@ const actualizarBodega = async (req, res = response) => {
     // .json({ msg: `${data.nombre} ya existe en la base de datos` });
     // const existe = await Bodega.findOne({ nombre: data.nombre.toUpperCase() });
     const existe = await Bodega.findAll({
-      where: { nombre: data.nombre.toUpperCase() },
+      where: { nombre: data.nombre.toUpperCase(), [Op.not]: [{ id }] },
     });
 
     if (existe.length > 0) {

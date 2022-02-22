@@ -1,5 +1,4 @@
 const { response } = require("express");
-const bcrypter = require("bcryptjs");
 const { Modelo, Categoria, Bodega } = require("../models");
 
 //pagination
@@ -80,22 +79,31 @@ const cargaMasivaModelo = async (req, res = response) => {
     if (repite>0) {
       return res.status(400).json({msg:"Datos ya existentes en la DB"})
     }else{
-      body._value.forEach(row=>{
-        Modelo.create({
-          nombre:row.nombre.toUpperCase(),
-          stock_minimo:row.stock_minimo,
-          CategoriumId: row.categoria
-        }) .then(r=>{
-          return res.status(200).json({
-            msg:"Funciona!"
-            ,r
-          })
-        }).catch(e=>{
-          return res.status(500).json({
-            msg:e
+
+      try {
+        
+        body._value.forEach(row=>{
+          Modelo.create({
+            nombre:row.nombre.toUpperCase(),
+            stock_minimo:row.stock_minimo,
+            CategoriumId: row.categoria
+          }) .then(r=>{
+          
+          }).catch(e=>{
+          
           })
         })
-      })
+
+        return res.status(200).json({
+          msg:"Funciona!"
+          
+        })
+      } catch (error) {
+        
+        return res.status(500).json({
+          msg:e
+        })
+      }
     }
 
 
@@ -129,7 +137,11 @@ const obtenerModelos = async (req, res = response) => {
       rows = await Modelo.findAll({
         attributes: ["id", "nombre", "stock_minimo"],
         include: [{ model: Categoria, attributes: ["id", "nombre"] }],
-        where: { estado: true, nombre: { [Op.like]: `%${filter}%` } },
+        where:{estado:true},
+        having: { [Op.or]:[
+          { "nombre": { [Op.like]: `%${filter}%` }},
+          { "Categorium.nombre": { [Op.like]: `%${filter}%` }}
+      ] },
       });
     } else {
       if (sorter) {

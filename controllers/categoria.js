@@ -46,29 +46,33 @@ const cargaMasiva = async (req, res = response) => {
         msg: "Hay datos que ya existen en la base de datos, por favor revise los datos.",
       });
     } else {
-      body._value.forEach(row => {
-        const categoriaDB = Categoria.create({
-          nombre:row.nombre.toUpperCase()
-        }).then((result) => {
-          res.status(200).json({
-            result,
-            msg:"Funciona!"
-          })
-          console.log(result);
-        }).catch((err) => {
-          res.status(500).json({
-            msg: "Hubo un error inesperado, favor contactarse con administrador",
-            err
+      try {
+        body._value.forEach(row => {
+          const categoriaDB = Categoria.create({
+            nombre:row.nombre.toUpperCase()
+          }).then((result) => {          
+            // console.log(result);
+          }).catch((err) => {
+            console.log(err);        
           });
+  
         });
 
-      });
+        return res.status(200).json({
+          msg: "Exito"
+        })
+      } catch (error) {
+        return res.status(500).json({
+          error
+        })
+      }
+
       
     }
-    console.log("Se repite alguno?", repite);
+    // console.log("Se repite alguno?", repite);
 
-    console.log("Array categorias", arrayCategorias);
-    console.log("bodyArray", bodyArray);
+    // console.log("Array categorias", arrayCategorias);
+    // console.log("bodyArray", bodyArray);
   });
 
   console.log(body._value);
@@ -171,7 +175,7 @@ const actualizarCategoria = async (req, res = response) => {
     console.log("NOmbre", data.nombre);
 
     const existe = await Categoria.findAll({
-      where: { estado: true, nombre: data.nombre },
+      where: { estado: true, nombre: data.nombre,[Op.not]: [{ id }] },
     });
 
     console.log("Existe", existe);
@@ -183,8 +187,8 @@ const actualizarCategoria = async (req, res = response) => {
   }
 
   try {
-    const categoria = await Categoria.findByPk(id);
-    const categoria_update = await categoria.update(data, {
+    const categoriaDb = await Categoria.findByPk(id);
+    const categoria_update = await categoriaDb.update(data, {
       where: id,
     });
     res.status(200).json({
@@ -195,7 +199,7 @@ const actualizarCategoria = async (req, res = response) => {
     console.log(error);
   }
 
-  const categoria = await Categoria.findByIdAndUpdate(id, data, { new: true });
+  const categoria = await Categoria.findByPk(id, {raw:true});
 
   res.status(200).json({
     categoria,

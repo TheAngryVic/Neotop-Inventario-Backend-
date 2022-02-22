@@ -1,5 +1,12 @@
 const { response } = require("express");
-const { Categoria, Producto, Modelo, Bodega, Usuario, Movimiento } = require("../models");
+const {
+  Categoria,
+  Producto,
+  Modelo,
+  Bodega,
+  Usuario,
+  Movimiento,
+} = require("../models");
 
 const ObjectId = require("mongodb").ObjectId;
 
@@ -30,57 +37,54 @@ const cargaMasivaProducto = async (req, res = response) => {
   });
 
   try {
-    let arrayidBodegas=[]
-    let arrayidModelos=[]
-    let arraySeries=[]
+    let arrayidBodegas = [];
+    let arrayidModelos = [];
+    let arraySeries = [];
     const idBodegas = await Bodega.findAll({
       attributes: ["id"],
       where: { estado: true },
       raw: true,
     });
-    idBodegas.forEach(b => {
-      arrayidBodegas.push(b.id)
+    idBodegas.forEach((b) => {
+      arrayidBodegas.push(b.id);
     });
     const idModelo = await Modelo.findAll({
       attributes: ["id"],
       where: { estado: true },
       raw: true,
     });
-    idModelo.forEach(m => {
-      arrayidModelos.push(m.id)
+    idModelo.forEach((m) => {
+      arrayidModelos.push(m.id);
     });
 
     //Vamos a validar tanto las bodegas como los modelos (los id)
     let bodegaCount = 0;
     let modeloCount = 0;
 
-
     for (let step = 0; step < bodyBodegaArray.length; step++) {
       if (arrayidBodegas.includes(parseInt(bodyBodegaArray[step]))) {
-        bodegaCount++
-      }else{
+        bodegaCount++;
+      } else {
         console.log("NO hay");
       }
     }
     for (let step = 0; step < bodyModeloArray.length; step++) {
       if (arrayidModelos.includes(parseInt(bodyModeloArray[step]))) {
         modeloCount++;
-      }else{
+      } else {
         console.log("NO hay");
       }
-    }  
-    
-    if (bodegaCount<bodyModeloArray.length) {
-      
-      return res.status(400).json({
-        msg:"Una bodega no existe en la base de datos, por favor revise los datos"
-      })
     }
-    if (modeloCount<bodyModeloArray.length) {
-      
+
+    if (bodegaCount < bodyModeloArray.length) {
       return res.status(400).json({
-        msg:"Un modelo no existe en la base de datos, por favor revise los datos"
-      })
+        msg: "Una bodega no existe en la base de datos, por favor revise los datos",
+      });
+    }
+    if (modeloCount < bodyModeloArray.length) {
+      return res.status(400).json({
+        msg: "Un modelo no existe en la base de datos, por favor revise los datos",
+      });
     }
 
     //Validar si las nSerie no están en la base de datos
@@ -90,56 +94,69 @@ const cargaMasivaProducto = async (req, res = response) => {
       raw: true,
     });
 
-    seriesProductosDB.forEach(s => {
-      arraySeries.push(s.nSerie)
+    seriesProductosDB.forEach((s) => {
+      arraySeries.push(s.nSerie);
     });
     //Aumentamos el contador de repetidos
     let repite = 0;
     for (let step = 0; step < bodyArray.length; step++) {
       if (arraySeries.includes(bodyArray[step].toUpperCase())) {
         repite++;
-      }else{
+      } else {
         console.log("NO hay");
       }
-    } 
-  
+    }
 
-    if (repite>0) {
+    if (repite > 0) {
       return res.status(400).json({
         msg: "Hay datos que ya existen en la base de datos, por favor revise los datos.",
       });
     } else {
-      body._value.forEach((row)=>{
-        Producto.create({
-          nSerie: row.nSerie.toUpperCase(),
-          ModeloId: row.ModeloId,
-          BodegaId: row.BodegaId,
-          UsuarioId: user,
-        })
-        .then(async (r)=>{
-          let bodegaName = await Bodega.findByPk(row.BodegaId, {attributes:['nombre'], raw:true});
-
-
-          let movimiento = await Movimiento.create({
-            local_nuevo:bodegaName.nombre,
-            fecha:Date.now(),
-            ProductoId: r.id        
+      try {
+        body._value.forEach((row) => {
+          Producto.create({
+            nSerie: row.nSerie.toUpperCase(),
+            ModeloId: row.ModeloId,
+            BodegaId: row.BodegaId,
+            UsuarioId: user,
           })
+            .then(async (r) => {
+              let movimiento = await Movimiento.create({
+                local_nuevo: bodegaName.nombre,
+                fecha: Date.now(),
+                ProductoId: r.id,
+              });
+            })
+            .catch((e) => {});
+        });
 
-          return res.status(200).json({
-            msg:"Funciona!"
-            ,r
-          })
-        }).catch(e=>{
-          return res.status(500).json({
-            msg:e
-          })
-        })
-      })
+        return res.status(200).json({
+          msg: "Funciona!",
+        });
+      } catch (error) {
+        return res.status(500).json({
+          msg: e,
+        });
+      }
     }
 
     console.log("Se repiten?", repite);
   } catch (error) {}
+};
+
+//Obtener combo
+const selectProducto = async (req, res = response) => {
+  const comboProductos = await Producto.findAll({
+    attributes: ["id", "nSerie"],
+    include: [
+      {
+        model: Modelo,
+        attributes: ["nombre"],
+      },
+    ],
+  });
+
+  res.status(200).json(comboProductos);
 };
 
 const obetenerInventario = async (req, res = response) => {
@@ -171,7 +188,12 @@ const obetenerInventario = async (req, res = response) => {
         ],
         include: [Modelo, Bodega],
         where: { estado: true },
-        having: { "Modelo.nombre": { [Op.like]: `%${filter}%` } },
+        having: {
+          [Op.or]: [
+            { "Modelo.nombre": { [Op.like]: `%${filter}%` } },
+            { "Bodega.nombre": { [Op.like]: `%${filter}%` } },
+          ],
+        },
         group: ["Modelo.nombre", "Bodega.nombre"],
       });
     } else {
@@ -241,7 +263,13 @@ const obtenerProductos = async (req, res = response) => {
         attributes: ["id", "nSerie", "disponible"],
         include: [{ all: true, attributes: ["id", "nombre"] }],
         where: { estado: true },
-        having: { "Modelo.nombre": { [Op.like]: `%${filter}%` } },
+        having: {
+          [Op.or]: [
+            { "Modelo.nombre": { [Op.like]: `%${filter}%` } },
+            { "Bodega.nombre": { [Op.like]: `%${filter}%` } },
+            { nSerie: { [Op.like]: `%${filter}%` } },
+          ],
+        },
       });
     } else {
       if (sorter) {
@@ -318,7 +346,7 @@ const crearProducto = async (req, res = response) => {
   const productoDB = await Producto.findOrCreate({
     where: { nSerie: data.nSerie },
     defaults: {
-      nSerie: data.nSerie,
+      nSerie: data.nSerie.toUpperCase(),
       ModeloId: data.ModeloId,
       BodegaId: data.BodegaId,
       UsuarioId: data.UsuarioId,
@@ -336,14 +364,17 @@ const crearProducto = async (req, res = response) => {
           where: { estado: true },
         });
 
-        let bodegaName = await Bodega.findByPk(data.BodegaId,{attributes: ["nombre"], raw:true})
+        let bodegaName = await Bodega.findByPk(data.BodegaId, {
+          attributes: ["nombre"],
+          raw: true,
+        });
 
         //Metemos los datos a la tabla movimiento
         let movimiento = await Movimiento.create({
-          local_nuevo:bodegaName.nombre,
-          fecha:Date.now(),
-          ProductoId: producto_.id        
-        })
+          local_nuevo: bodegaName.nombre,
+          fecha: Date.now(),
+          ProductoId: producto_.id,
+        });
 
         res.status(201).json({
           msg: `Producto: ${producto.nSerie} agregado`,
@@ -355,7 +386,7 @@ const crearProducto = async (req, res = response) => {
   });
 };
 
-//actualizar categoria
+//  zar categoria
 
 const actualizarProducto = async (req, res = response) => {
   const { id } = req.params;
@@ -390,9 +421,15 @@ const actualizarProducto = async (req, res = response) => {
 
   try {
     const productoDB = await Producto.findByPk(id);
-    const _productoDB = await Producto.findByPk(id,{raw:true});
-    const originalName = await Bodega.findByPk(_productoDB.BodegaId,{attributes: ["nombre"], raw:true});
-    const nuevoName = await Bodega.findByPk(data.BodegaId,{attributes: ["nombre"], raw:true});
+    const _productoDB = await Producto.findByPk(id, { raw: true });
+    const originalName = await Bodega.findByPk(_productoDB.BodegaId, {
+      attributes: ["nombre"],
+      raw: true,
+    });
+    const nuevoName = await Bodega.findByPk(data.BodegaId, {
+      attributes: ["nombre"],
+      raw: true,
+    });
     console.log("Producto db", _productoDB);
 
     await productoDB.update(data, {
@@ -405,13 +442,13 @@ const actualizarProducto = async (req, res = response) => {
       where: { estado: true },
     });
 
-      //Metemos los datos a la tabla movimiento
-      let movimiento = await Movimiento.create({
-        local_original:originalName.nombre,
-        local_nuevo:nuevoName.nombre,
-        fecha:Date.now(),
-        ProductoId: id        
-      })
+    //Metemos los datos a la tabla movimiento
+    let movimiento = await Movimiento.create({
+      local_original: originalName.nombre,
+      local_nuevo: nuevoName.nombre,
+      fecha: Date.now(),
+      ProductoId: id,
+    });
 
     res.status(200).json({
       msg: `Producto: ${producto.nSerie}`,
@@ -452,4 +489,5 @@ module.exports = {
   obtenerProducto,
   obtenerProductos,
   cargaMasivaProducto,
+  selectProducto,
 };

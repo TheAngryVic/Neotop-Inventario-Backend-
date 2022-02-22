@@ -41,9 +41,19 @@ const obtenerMovimientos = async (req, res = response) => {
           });
         } else {
           rows = await Movimiento.findAll({
-            attributes: ["Producto.nSerie", "local_original", "local_nuevo","fecha"],
+            attributes: ["Producto.nSerie",
+             "local_original",
+             "local_nuevo",
+            "fecha",  [
+              sequelize.fn(
+                "DATE_FORMAT",
+                sequelize.col("fecha"),
+                "%d-%m-%Y"
+              ),
+              "fecha",
+            ]],
             include: [{ model: Producto, attributes: ["nSerie"] }],
-            order: [["fecha", "asc"]],
+            order: [["id", "DESC"]],
             offset: offset,
             limit: limit,
           });

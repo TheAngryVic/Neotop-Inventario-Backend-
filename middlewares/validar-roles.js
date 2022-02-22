@@ -8,9 +8,9 @@ const adminRole = async (req, res = response, next) => {
     });
   }
 
-  const { rol, nombre } = req.usuario;
+  const { RolId, nombre } = req.usuario.dataValues;
 
-  if (rol !== "ADMIN_ROLE") {
+  if (RolId !== 1) {
     return res.status(401).json({
       msg: ` ${nombre} no es un Administrador - No puede hacer esto`,
     });

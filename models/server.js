@@ -5,7 +5,7 @@ const { db } = require("../DB/config");
 class Server {
   constructor() {
     this.app = express();
-    this.port = process.env.PORT;
+    this.port = process.env.PORT || 3000;
     this.paths = {
       auth: "/api/auth",
       bodegas: "/api/bodegas",
@@ -14,6 +14,7 @@ class Server {
       movimientos: "/api/movimientos",
       productos: "/api/productos",
       usuarios: "/api/usuarios",
+      stecnico: "/api/stecnico",
     };
 
     //Conectarse a la DB
@@ -58,6 +59,7 @@ class Server {
     this.app.use(this.paths.movimientos, require("../routes/movimientos"));
     this.app.use(this.paths.productos, require("../routes/productos"));
     this.app.use(this.paths.usuarios, require("../routes/user"));
+    this.app.use(this.paths.stecnico, require("../routes/tecnicos"));
   }
 
   listen() {

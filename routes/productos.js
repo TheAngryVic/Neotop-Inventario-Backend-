@@ -1,6 +1,6 @@
 const { Router, response } = require("express");
 const { check } = require("express-validator"); //MIddleware de ExpressValidator
-const { obtenerProductos, crearProducto, actualizarProducto, borrarProducto, obtenerProducto, obetenerInventario, cargaMasivaProducto } = require("../controllers/productos");
+const { obtenerProductos, crearProducto, actualizarProducto, borrarProducto, obtenerProducto, obetenerInventario, cargaMasivaProducto, selectProducto } = require("../controllers/productos");
 const { existeCategoria, existeCategoriaxID, existeBodegaxID, existeModeloxID, existeSerie, existeProductoxID } = require("../helpers/dbValidators");
 const { validarJWT, bodegaRole } = require("../middlewares");
 const { validarCampos } = require("../middlewares/validar-Campos");
@@ -20,6 +20,8 @@ router.post('/masivo',[validarJWT, bodegaRole, validarCampos], cargaMasivaProduc
 
 //Obtener todas los productos
 router.get("/",[validarJWT, validarCampos] ,obtenerProductos);
+
+router.get("/select",[validarJWT, validarCampos] ,selectProducto);
 
 
 router.get("/inventario",[validarJWT, validarCampos] ,obetenerInventario);
